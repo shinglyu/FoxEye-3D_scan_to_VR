@@ -51,6 +51,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl/conversions.h>
+//#include <stdint.h>
 
 using namespace pcl;
 using namespace pcl::io;
@@ -231,6 +232,40 @@ main (int argc, char** argv)
   PolygonMesh mesh;
   //loadPolygonFileVTK (argv[vtk_in_file_index[0]], mesh);
   loadVTKMesh(argv[vtk_in_file_index[0]], mesh);
+
+  PolygonMesh coloredMesh;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr coloredCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+  //pcl::copyPointCloud(mesh.cloud, *coloredCloud);
+  pcl::fromPCLPointCloud2(mesh.cloud, *coloredCloud);
+  for (PointCloud<pcl::PointXYZRGB>::iterator cloud_it (coloredCloud->begin()); cloud_it != coloredCloud->end(); ++cloud_it)
+  {
+    /*
+    cloud_it->r = 1* rand () / (RAND_MAX + 1.0f);
+    cloud_it->g = 1* rand () / (RAND_MAX + 1.0f);
+    cloud_it->b = 1* rand () / (RAND_MAX + 1.0f);
+    */
+    /*
+    uint8_t r = 255 * rand() / (RAND_MAX + 1.0f);
+    uint8_t g = 255 * rand() / (RAND_MAX + 1.0f);
+    uint8_t b = 255 * rand() / (RAND_MAX + 1.0f);
+    */
+    /*
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 255;
+    */
+    uint8_t r = rand() % (int)(255);
+    uint8_t g = rand() % (int)(255);
+    uint8_t b = rand() % (int)(255);
+    uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
+    std::cout << r << std::endl;
+    std::cout << g << std::endl;
+    std::cout << b << std::endl;
+    std::cout << *reinterpret_cast<float*>(&rgb) << std::endl;
+    cloud_it->rgb = *reinterpret_cast<float*>(&rgb);
+  } 
+  pcl::io::savePCDFileASCII ("debug_colored.pcd", *coloredCloud);
+  //std::cerr << "Saved " << coloredCloud.points.size () << " data points to debug_colored.pcd." << std::endl;
 
 
   return (0);
