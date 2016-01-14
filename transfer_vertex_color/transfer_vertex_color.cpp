@@ -49,8 +49,13 @@
 #include <pcl/console/print.h>
 #include <pcl/console/parse.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/io/obj_io.h>
+#include <pcl/io/ply_io.h>
+#include <pcl/io/vtk_io.h>
 #include <pcl/io/vtk_lib_io.h>
 #include <pcl/conversions.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/point_cloud.h>
 //#include <stdint.h>
 
 using namespace pcl;
@@ -222,8 +227,8 @@ main (int argc, char** argv)
   std::string vtk_in_filename = argv[vtk_in_file_index[0]];
 
   // Load the input file
-  pcl::PCLPointCloud2::Ptr blob (new pcl::PCLPointCloud2);
-  if (!loadPCDCloud (pcd_filename, *blob))
+  pcl::PCLPointCloud2::Ptr origColorCloud2 (new pcl::PCLPointCloud2);
+  if (!loadPCDCloud (pcd_filename, *origColorCloud2))
   {
     print_error ("Unable to load PCD file.\n");
     return (-1);
@@ -237,35 +242,88 @@ main (int argc, char** argv)
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr coloredCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
   //pcl::copyPointCloud(mesh.cloud, *coloredCloud);
   pcl::fromPCLPointCloud2(mesh.cloud, *coloredCloud);
+
+
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr origColorCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::fromPCLPointCloud2(*origColorCloud2, *origColorCloud);
+  pcl::KdTreeFLANN<pcl::PointXYZRGB> kdtree;
+  kdtree.setInputCloud (origColorCloud);
+
+  /*
+  float resolution = 128.0f;
+  pcl::octree::OctreePointCloudSearch<pcl::PointXYZRGB> octree (resolution);
+  octree.setInputCloud (*origColorCloud);
+  octree.addPointsFromInputCloud ();
+  */
+
+
+  //Ref: http://pointclouds.org/documentation/tutorials/kdtree_search.php#kdtree-search
   for (PointCloud<pcl::PointXYZRGB>::iterator cloud_it (coloredCloud->begin()); cloud_it != coloredCloud->end(); ++cloud_it)
   {
+    int K = 5;
+
+    std::vector<int> pointIdxNKNSearch;
+    std::vector<float> pointNKNSquaredDistance;
+
     /*
-    cloud_it->r = 1* rand () / (RAND_MAX + 1.0f);
-    cloud_it->g = 1* rand () / (RAND_MAX + 1.0f);
-    cloud_it->b = 1* rand () / (RAND_MAX + 1.0f);
+    std::cout << "K nearest neighbor search at (" << searchPoint.x 
+      << " " << searchPoint.y 
+      << " " << searchPoint.z
+      << ") with K=" << K << std::endl;
     */
+
+    uint8_t r255, g255, b255;
+    if (kdtree.nearestKSearch (*cloud_it, K, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+    {
+      float r = 0;
+      float g = 0;
+      float b = 0;
+      for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i){
+        //TODO: smartly detect if rgb or rgba
+        r += ((uint32_t)origColorCloud->points[ pointIdxNKNSearch[i] ].rgba >> 16) & 0x0000ff;
+        g += ((uint32_t)origColorCloud->points[ pointIdxNKNSearch[i] ].rgba >> 8 ) & 0x0000ff;
+        b += ((uint32_t)origColorCloud->points[ pointIdxNKNSearch[i] ].rgba      ) & 0x0000ff;
+        //std::cout << (uint32_t)origColorCloud->points[ pointIdxNKNSearch[i] ].rgba << std::endl;
+        /*
+        std::cout << "    "  <<   cloud->points[ pointIdxNKNSearch[i]  ].x 
+          << " " << cloud->points[ pointIdxNKNSearch[i]  ].y 
+          << " " << cloud->points[ pointIdxNKNSearch[i]  ].z 
+          << " (squared distance: " << pointNKNSquaredDistance[i] << ")" << std::endl;
+          */
+      }
+      //std::cout << (int)r << " " << (int)g << " " << (int)b << std::endl;
+      r255 = (int)(r / pointIdxNKNSearch.size () + 0.5);
+      g255 = (int)(g / pointIdxNKNSearch.size () + 0.5);
+      b255 = (int)(b / pointIdxNKNSearch.size () + 0.5);
+      //std::cout << (int)r255 << " " << (int)g255 << " " << (int)b255 << std::endl;
+
+    }
+
     /*
-    uint8_t r = 255 * rand() / (RAND_MAX + 1.0f);
-    uint8_t g = 255 * rand() / (RAND_MAX + 1.0f);
-    uint8_t b = 255 * rand() / (RAND_MAX + 1.0f);
-    */
-    /*
-    uint8_t r = 0;
-    uint8_t g = 0;
-    uint8_t b = 255;
-    */
     uint8_t r = rand() % (int)(255);
     uint8_t g = rand() % (int)(255);
     uint8_t b = rand() % (int)(255);
-    uint32_t rgb = ((uint32_t)r << 16 | (uint32_t)g << 8 | (uint32_t)b);
-    std::cout << r << std::endl;
-    std::cout << g << std::endl;
-    std::cout << b << std::endl;
-    std::cout << *reinterpret_cast<float*>(&rgb) << std::endl;
+    */
+    uint32_t rgb = ((uint32_t)r255 << 16 | (uint32_t)g255 << 8 | (uint32_t)b255);
+    //std::cout << r << std::endl;
+    //std::cout << g << std::endl;
+    //std::cout << b << std::endl;
+    //std::cout << *reinterpret_cast<float*>(&rgb) << std::endl;
     cloud_it->rgb = *reinterpret_cast<float*>(&rgb);
   } 
-  pcl::io::savePCDFileASCII ("debug_colored.pcd", *coloredCloud);
+
+  //savePCDFileASCII ("debug_colored.pcd", *coloredCloud);
   //std::cerr << "Saved " << coloredCloud.points.size () << " data points to debug_colored.pcd." << std::endl;
+  //
+  //PCLPointCloud2 coloredCloud2;
+  //pcl::toPCLPointCloud2(*coloredCloud, coloredCloud2);
+  pcl::toPCLPointCloud2(*coloredCloud, mesh.cloud);
+  //mesh.cloud = coloredCloud2;
+  //saveVTKFile("debug_colored.vtk", mesh); //No color
+  //saveOBJFile("debug_colored.obj", mesh); //No color
+  savePLYFile("debug_colored.ply", mesh);
+
+
 
 
   return (0);
