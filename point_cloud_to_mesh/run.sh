@@ -1,5 +1,7 @@
 #===Downsampling===
-pcl_voxel_grid learn1.pcd learn1_downsample.pcd -leaf 0.005
+#pcl_voxel_grid learn1.pcd learn1_downsample.pcd -leaf 0.005
+pcl_voxel_grid learn1.pcd learn1_downsample.pcd -leaf 0.001
+#cp learn1.pcd learn1_downsample.pcd
 #----------------------
 #pcl_viewer learn1.pcd
 pcl_viewer learn1_downsample.pcd
@@ -8,7 +10,7 @@ pcl_viewer learn1_downsample.pcd
 #===Normal Estimation===
 pcl_normal_estimation learn1_downsample.pcd learn1_downsample_normal.pcd -radius 0.01
 #----------------------
-pcl_pcd2ply learn1_downsample_normal.pcd learn1_downsample_normal.ply
+#pcl_pcd2ply learn1_downsample_normal.pcd learn1_downsample_normal.ply
 pcl_viewer -normals 5 learn1_downsample_normal.pcd
 #----------------------
 
@@ -34,6 +36,10 @@ meshlab learn1_downsample_normal_poisson.ply
 #pcl_vtk2ply learn1_downsample_normal_hull.vtk learn1_downsample_normal_hull.ply
 #meshlab learn1_downsample_normal_hull.ply
 #----------------------
+
+#===Transfer color from point cloud to mesh
+../transfer_vertex_color/transfer_vertex_color learn1_downsample.pcd learn1_downsample_normal_poisson.vtk learn1_downsample_normal_poisson_color.ply
+meshlab learn1_downsample_normal_poisson_color.ply
 
 #===Export to obj===
 pcl_vtk2obj learn1_downsample_normal_poisson.vtk learn1_downsample_normal_poisson.obj

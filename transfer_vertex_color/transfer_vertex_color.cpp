@@ -66,48 +66,9 @@ void
 printHelp (int, char **argv)
 {
   std::cout << std::endl;
-  std::cout << "****************************************************************************" << std::endl;
-  std::cout << "*                                                                          *" << std::endl;
-  std::cout << "*                       PCD 2 PNG CONVERTER - Usage Guide                  *" << std::endl;
-  std::cout << "*                                                                          *" << std::endl;
-  std::cout << "****************************************************************************" << std::endl;
+  std::cout << "Transfer the vertex color from a colored point cloud to its corresponding colorless polygon mesh." << std::endl;
+  std::cout << "Usage: " << argv[0] << " colored_point_cloud.pcd colorless_mesh.vtk output.ply" << std::endl;
   std::cout << std::endl;
-  std::cout << "Usage: " << argv[0] << " [Options] input.pcd output.png" << std::endl;
-  std::cout << std::endl;
-  std::cout << "Options:" << std::endl;
-  std::cout << std::endl;
-  std::cout << "     --help   : Show this help"                                               << std::endl;
-  std::cout << "     --no-nan : Paint NaN (infinite) points with black color regardless of"   << std::endl;
-  std::cout << "                field contents"                                               << std::endl;
-  std::cout << "     --field  : Set the field to extract data from. Supported fields:"        << std::endl;
-  std::cout << "                - normal"                                                     << std::endl;
-  std::cout << "                * rgb (default)"                                              << std::endl;
-  std::cout << "                - label"                                                      << std::endl;
-  std::cout << "                - z"                                                          << std::endl;
-  std::cout << "                - curvature"                                                  << std::endl;
-  std::cout << "                - intensity"                                                  << std::endl;
-  std::cout << "     --scale  : Apply scaling to extracted data (only for z, curvature, and"  << std::endl;
-  std::cout << "                intensity fields). Supported options:"                        << std::endl;
-  std::cout << "                - <float> : Scale by a fixed number"                          << std::endl;
-  std::cout << "                - auto    : Auto-scale to the full range"                     << std::endl;
-  std::cout << "                - no      : No scaling"                                       << std::endl;
-  std::cout << "                If the option is omitted then default scaling (depends on"    << std::endl;
-  std::cout << "                the field type) will be used."                                << std::endl;
-  std::cout << "     --colors : Choose color mapping mode for labels (only for label field)." << std::endl;
-  std::cout << "                Supported options:"                                           << std::endl;
-  std::cout << "                - mono    : Shades of gray"                                   << std::endl;
-  std::cout << "                - rgb     : Randomly generated RGB colors"                    << std::endl;
-  std::cout << "                * glasbey : Fixed colors from the Glasbey table¹ (default)"   << std::endl;
-  std::cout << std::endl;
-  std::cout << "Notes:"                                                                       << std::endl;
-  std::cout << std::endl;
-  std::cout << "¹) The Glasbey lookup table is a color table structured in a maximally"       << std::endl;
-  std::cout << "   discontinuous manner. Adjacent color bins are chosen to be as distinct"    << std::endl;
-  std::cout << "   from one another as possible (see https://github.com/taketwo/glasbey)."    << std::endl;
-  std::cout << "   The label with the smallest id will be assigned the first color from the"  << std::endl;
-  std::cout << "   table, the second smallest will have the second color, and so on. Thus,"   << std::endl;
-  std::cout << "   if you have several clouds with the same labels, you will get repetitive"  << std::endl;
-  std::cout << "   consistently colored PNG images."                                          << std::endl;
 }
 
 bool
@@ -205,7 +166,7 @@ main (int argc, char** argv)
 {
   print_info ("Transfers the vertex color of a point colud to a mesh.\nFor more information, use: %s --help\n", argv[0]);
 
-  if (argc < 3 || pcl::console::find_switch (argc, argv, "--help"))
+  if (argc < 4 || pcl::console::find_switch (argc, argv, "--help"))
   {
     printHelp (argc, argv);
     return (-1);
@@ -214,6 +175,7 @@ main (int argc, char** argv)
   // Parse the command line arguments for .pcd and .png files
   std::vector<int> pcd_file_index = parse_file_extension_argument (argc, argv, ".pcd");
   std::vector<int> vtk_in_file_index = parse_file_extension_argument (argc, argv, ".vtk");
+  std::vector<int> ply_out_file_index = parse_file_extension_argument (argc, argv, ".ply");
 
   /*
   if (pcd_file_index.size () != 1 || png_file_index.size () != 1)
@@ -321,7 +283,7 @@ main (int argc, char** argv)
   //mesh.cloud = coloredCloud2;
   //saveVTKFile("debug_colored.vtk", mesh); //No color
   //saveOBJFile("debug_colored.obj", mesh); //No color
-  savePLYFile("debug_colored.ply", mesh);
+  savePLYFile(argv[ply_out_file_index[0]], mesh);
 
 
 
