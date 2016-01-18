@@ -1,6 +1,9 @@
+#===Recover the camera RGB pic===
+pcl_pcd2png learn1.pcd learn1.png
+
 #===Downsampling===
 #pcl_voxel_grid learn1.pcd learn1_downsample.pcd -leaf 0.005
-pcl_voxel_grid learn1.pcd learn1_downsample.pcd -leaf 0.001
+pcl_voxel_grid "$1" learn1_downsample.pcd -leaf 0.001
 #cp learn1.pcd learn1_downsample.pcd
 #----------------------
 #pcl_viewer learn1.pcd
