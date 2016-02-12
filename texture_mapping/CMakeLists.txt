@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(MY_GRAND_PROJECT)
-find_package(PCL 1.3 REQUIRED COMPONENTS common io kdtree)
+find_package(PCL 1.3 REQUIRED COMPONENTS common io kdtree search features)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
@@ -9,4 +9,4 @@ add_definitions(${PCL_DEFINITIONS})
 #target_link_libraries(texture_mapping ${PCL_LIBRARIES} pcl_common pcl_io ${OPENNI_LIBRARIES} pcl_visualization pcl_kdtree pcl_features pcl_surface boost_system boost_filesystem)
 
 add_executable(texture_mapping texture_mapping.cpp)
-target_link_libraries(texture_mapping ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES} pcl_io ${PCL_KDTREE_LIBRARIES})
+target_link_libraries(texture_mapping ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES} pcl_io ${PCL_KDTREE_LIBRARIES} pcl_kdtree pcl_search pcl_features)
