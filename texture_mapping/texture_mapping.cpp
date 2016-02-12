@@ -543,6 +543,8 @@ main (int argc, char** argv)
       for (size_t n = 0; n < tex_coordinates.size (); ++n)
         texture_map_tmp.push_back (tex_coordinates[n]);
     }// end faces
+    //https://github.com/PointCloudLibrary/pcl/blob/master/surface/include/pcl/surface/impl/texture_mapping.hpp#L181
+    tex_mesh.tex_coordinates.push_back (texture_map_tmp);
 
     //texture materials
     pcl::TexMaterial mesh_material;
