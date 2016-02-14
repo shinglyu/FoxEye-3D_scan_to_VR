@@ -411,8 +411,9 @@ main (int argc, char** argv)
   img.encoding = "rgb8";
   //img.width = cloud.width;
   //img.height = cloud.height;
-  img.width = 4;
-  img.height = 4;
+  //TODO: dynamically detect width and height
+  img.width = 2048; 
+  img.height = 2048;
   img.step = img.width * sizeof (unsigned char) * 3;
   img.data.resize (img.step * img.height);
 
@@ -427,35 +428,16 @@ main (int argc, char** argv)
     img.data[i * 3 + 1] = (val >> 8) & 0x0000ff;
     img.data[i * 3 + 2] = (val) & 0x0000ff;
     */
+    /*
     img.data[i * 3 + 0] = static_cast<uint8_t> ((std::rand () % 256));
     img.data[i * 3 + 1] = static_cast<uint8_t> ((std::rand () % 256));
     img.data[i * 3 + 2] = static_cast<uint8_t> ((std::rand () % 256));
+    */
+    img.data[i * 3 + 0] = static_cast<uint8_t> (255);
+    img.data[i * 3 + 1] = static_cast<uint8_t> (0);
+    img.data[i * 3 + 2] = static_cast<uint8_t> (0);
   }
 
-  /*
-  std::srand(std::time(0));
-  std::map<uint32_t, size_t> colormap;
-
-  for (size_t i = 0; i < cloud.points.size (); ++i)
-  {
-    uint32_t val;
-    //pcl::getFieldValue<PointT, uint32_t> (cloud.points[i], offset, val);
-    val = 0;
-    if (colormap.count (val) == 0)
-    {
-      colormap[val] = i * 3;
-      img.data[i * 3 + 0] = static_cast<uint8_t> ((std::rand () % 256));
-      img.data[i * 3 + 1] = static_cast<uint8_t> ((std::rand () % 256));
-      img.data[i * 3 + 2] = static_cast<uint8_t> ((std::rand () % 256));
-
-    }
-    else
-    {
-      memcpy (&img.data[i * 3], &img.data[colormap[val]], 3);
-
-    }
-                    }
-                    */
 
   saveImage (png_filename, img);
 
@@ -529,14 +511,18 @@ main (int argc, char** argv)
       std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > tex_coordinates = mapTexture2Face (facet[0], facet[1], facet[2]);
       */
       Eigen::Vector2f tp1, tp2, tp3;
-      tp1[0] = 0.0;
-      tp1[1] = 0.0;
+      size_t col = i % (img.width / 2);
+      size_t row = i / (img.height/ 2);
+      //printf("%zu\n",col);
+      //printf("%zu\n",row);
+      tp1[0] = (col * 2 + 0.0) / img.width;
+      tp1[1] = (row * 2 + 0.0) / img.height;
 
-      tp2[0] = 1.0;
-      tp2[1] = 0.0;
-      
-      tp3[0] = 0.0;
-      tp3[1] = 1.0;
+      tp2[0] = (col * 2 + 1.0) / img.width;
+      tp2[1] = (row * 2 + 0.0) / img.height;
+
+      tp3[0] = (col * 2 + 0.0) / img.width;
+      tp3[1] = (row * 2 + 1.0) / img.height;
       std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > tex_coordinates;
       tex_coordinates.push_back (tp1);
       tex_coordinates.push_back (tp2);
