@@ -278,6 +278,21 @@ printHelp (int, char **argv)
   std::cout << "   consistently colored PNG images."                                          << std::endl;
 }
 
+//TODO: include the load*Cloud from transfer_vertex_color
+bool
+loadPCDCloud (const std::string &filename, pcl::PCLPointCloud2 &cloud)
+{
+  TicToc tt;
+  print_highlight ("Loading "); print_value ("%s ", filename.c_str ());
+
+  tt.tic ();
+  if (loadPCDFile (filename, cloud) < 0)
+    return (false);
+  print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%d", cloud.width * cloud.height); print_info (" points]\n");
+  print_info ("Available dimensions: "); print_value ("%s\n", pcl::getFieldsList (cloud).c_str ());
+
+  return (true);
+}
 bool
 loadPLYCloud (const std::string &filename, pcl::PCLPointCloud2 &cloud)
 {
@@ -385,7 +400,7 @@ main (int argc, char** argv)
   print_info ("Convert a PCD file to PNG format.\nFor more information, use: %s --help\n", argv[0]);
 
   //if (argc < 3 || pcl::console::find_switch (argc, argv, "--help"))
-  if (argc < 2 || pcl::console::find_switch (argc, argv, "--help"))
+  if (argc < 3 || pcl::console::find_switch (argc, argv, "--help"))
   {
     printHelp (argc, argv);
     return (-1);
@@ -393,16 +408,18 @@ main (int argc, char** argv)
 
   // Parse the command line arguments for .pcd and .png files
   //std::vector<int> ply_file_index = parse_file_extension_argument (argc, argv, ".ply");
+  std::vector<int> pcd_file_index = parse_file_extension_argument (argc, argv, ".pcd");
   std::vector<int> vtk_file_index = parse_file_extension_argument (argc, argv, ".vtk");
   std::vector<int> png_file_index = parse_file_extension_argument (argc, argv, ".png");
 
-  if (vtk_file_index.size () != 1 || png_file_index.size () != 1)
+  if (pcd_file_index.size () != 1 || vtk_file_index.size () != 1 || png_file_index.size () != 1)
   {
     print_error ("Need one input PCD file and one output PNG file.\n");
     return (-1);
   }
 
   //std::string ply_filename = argv[ply_file_index[0]];
+  std::string pcd_filename = argv[pcd_file_index[0]];
   std::string vtk_filename = argv[vtk_file_index[0]];
   std::string png_filename = argv[png_file_index[0]];
 
@@ -412,14 +429,16 @@ main (int argc, char** argv)
   //img.width = cloud.width;
   //img.height = cloud.height;
   //TODO: dynamically detect width and height
-  img.width = 2048; 
-  img.height = 2048;
+  img.width = 512; 
+  img.height = 512;
   img.step = img.width * sizeof (unsigned char) * 3;
   img.data.resize (img.step * img.height);
 
   std::srand(std::time(0));
+  /*
   for (size_t i = 0; i < img.width * img.height; ++i)
   {
+  */
     /*
     uint32_t val;
     //pcl::getFieldValue<PointT, uint32_t> (cloud.points[i], offset, val);
@@ -433,13 +452,8 @@ main (int argc, char** argv)
     img.data[i * 3 + 1] = static_cast<uint8_t> ((std::rand () % 256));
     img.data[i * 3 + 2] = static_cast<uint8_t> ((std::rand () % 256));
     */
-    img.data[i * 3 + 0] = static_cast<uint8_t> (255);
-    img.data[i * 3 + 1] = static_cast<uint8_t> (0);
-    img.data[i * 3 + 2] = static_cast<uint8_t> (0);
-  }
+  //}
 
-
-  saveImage (png_filename, img);
 
   //pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
 
@@ -454,6 +468,14 @@ main (int argc, char** argv)
     return (-1);
   }
 
+  pcl::PCLPointCloud2::Ptr origColorCloud2 (new pcl::PCLPointCloud2);
+  if (!loadPCDCloud (pcd_filename, *origColorCloud2))
+  {
+    print_error ("Unable to load PCD file.\n");
+    return (-1);
+  }
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr origColorCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::fromPCLPointCloud2(*origColorCloud2, *origColorCloud);
   //pcl::PointCloud<pcl::PointXYZRGB>::Ptr coloredCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
   //pcl::toPCLPointCloud2(*coloredCloud, mesh.cloud);
 
@@ -485,6 +507,10 @@ main (int argc, char** argv)
 
   for (size_t m = 0; m < tex_mesh.tex_polygons.size (); ++m)
   {
+    printf("processing mesh no. %zu\n", m);
+
+    pcl::KdTreeFLANN<pcl::PointXYZRGB> kdtree;
+    kdtree.setInputCloud (origColorCloud);
     // texture coordinates for each mesh
     //std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > texture_map_tmp;
     std::vector<Eigen::Vector2f> texture_map_tmp;
@@ -494,8 +520,36 @@ main (int argc, char** argv)
     {
       size_t idx;
 
-      // get facet information
-      /*
+
+      // get texture coordinates of each face
+      //std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > tex_coordinates = mapTexture2Face (facet[0], facet[1], facet[2]);
+
+      Eigen::Vector2f tp1, tp2, tp3;
+      float col = i % (img.width);
+      float row = i / (img.height);
+      //printf("%zu\n",i);
+      //printf("%zu\n",col);
+      //printf("%zu\n",row);
+      tp1[1] = (row+ 0.0) / img.height;
+      tp1[0] = (col+ 0.0) / img.width;
+
+      tp2[1] = (row+ 0.0) / img.height;
+      tp2[0] = (col+ 0.0) / img.width;
+
+      tp3[1] = (row+ 0.0) / img.height;
+      tp3[0] = (col+ 0.0) / img.width;
+      std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > tex_coordinates;
+      tex_coordinates.push_back (tp1);
+      tex_coordinates.push_back (tp2);
+      tex_coordinates.push_back (tp3);
+
+      for (size_t n = 0; n < tex_coordinates.size (); ++n)
+        texture_map_tmp.push_back (tex_coordinates[n]);
+
+      //Find nearsest color
+      // 
+      Eigen::Vector3f facet[3];
+      Eigen::Vector3f centeriod;
       for (size_t j = 0; j < tex_mesh.tex_polygons[m][i].vertices.size (); ++j)
       {
         idx = tex_mesh.tex_polygons[m][i].vertices[j];
@@ -506,29 +560,51 @@ main (int argc, char** argv)
         facet[j][1] = y;
         facet[j][2] = z;
       }
+      centeriod = (facet[0] + facet[1] + facet[2])/3;
 
-      // get texture coordinates of each face
-      std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > tex_coordinates = mapTexture2Face (facet[0], facet[1], facet[2]);
+
+      int K = 5;
+
+      std::vector<int> pointIdxNKNSearch;
+      std::vector<float> pointNKNSquaredDistance;
+
+      /*
+      std::cout << "K nearest neighbor search at (" << searchPoint.x 
+        << " " << searchPoint.y 
+        << " " << searchPoint.z
+        << ") with K=" << K << std::endl;
       */
-      Eigen::Vector2f tp1, tp2, tp3;
-      size_t col = i % (img.width / 2);
-      size_t row = i / (img.height/ 2);
-      //printf("%zu\n",col);
-      //printf("%zu\n",row);
-      tp1[0] = (col * 2 + 0.0) / img.width;
-      tp1[1] = (row * 2 + 0.0) / img.height;
+      pcl::PointXYZRGB *centeriodPoint = new pcl::PointXYZRGB();
+      centeriodPoint->x = centeriod[0];
+      centeriodPoint->y = centeriod[1];
+      centeriodPoint->z = centeriod[2];
 
-      tp2[0] = (col * 2 + 1.0) / img.width;
-      tp2[1] = (row * 2 + 0.0) / img.height;
+      float r, g, b;
+      if (kdtree.nearestKSearch (*centeriodPoint, K, pointIdxNKNSearch, pointNKNSquaredDistance) > 0)
+      {
+        r = 0;
+        g = 0;
+        b = 0;
+        for (size_t i = 0; i < pointIdxNKNSearch.size (); ++i){
+          //TODO: smartly detect if rgb or rgba
+          r += ((uint32_t)origColorCloud->points[ pointIdxNKNSearch[i] ].rgba >> 16) & 0x0000ff;
+          g += ((uint32_t)origColorCloud->points[ pointIdxNKNSearch[i] ].rgba >> 8 ) & 0x0000ff;
+          b += ((uint32_t)origColorCloud->points[ pointIdxNKNSearch[i] ].rgba      ) & 0x0000ff;
+          //std::cout << (uint32_t)origColorCloud->points[ pointIdxNKNSearch[i] ].rgba << std::endl;
+          /*
+          std::cout << "    "  <<   cloud->points[ pointIdxNKNSearch[i]  ].x 
+            << " " << cloud->points[ pointIdxNKNSearch[i]  ].y 
+            << " " << cloud->points[ pointIdxNKNSearch[i]  ].z 
+            << " (squared distance: " << pointNKNSquaredDistance[i] << ")" << std::endl;
+            */
+        }
 
-      tp3[0] = (col * 2 + 0.0) / img.width;
-      tp3[1] = (row * 2 + 1.0) / img.height;
-      std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > tex_coordinates;
-      tex_coordinates.push_back (tp1);
-      tex_coordinates.push_back (tp2);
-      tex_coordinates.push_back (tp3);
-      for (size_t n = 0; n < tex_coordinates.size (); ++n)
-        texture_map_tmp.push_back (tex_coordinates[n]);
+      }
+      size_t totalRows = img.height;
+      img.data[((totalRows-row)*img.width+ col) * 3 + 0] = static_cast<uint8_t> (r / pointIdxNKNSearch.size () + 0.5);
+      img.data[((totalRows-row)*img.width+ col) * 3 + 1] = static_cast<uint8_t> (g / pointIdxNKNSearch.size () + 0.5);
+      img.data[((totalRows-row)*img.width+ col) * 3 + 2] = static_cast<uint8_t> (b / pointIdxNKNSearch.size () + 0.5);
+
     }// end faces
     //https://github.com/PointCloudLibrary/pcl/blob/master/surface/include/pcl/surface/impl/texture_mapping.hpp#L181
     tex_mesh.tex_coordinates.push_back (texture_map_tmp);
@@ -584,8 +660,11 @@ main (int argc, char** argv)
   PCL_INFO ("...Done.\n");
 
   pcl::toPCLPointCloud2 (*cloud_with_normals, tex_mesh.cloud);
+  
+  PCL_INFO ("\nSaving textured to png\n");
+  saveImage (png_filename, img);
 
-  PCL_INFO ("\nSaving mesh to textured_mesh.obj\n");
+  PCL_INFO ("\nSaving mesh to output.obj + output.mtl\n");
   saveOBJFile("output.obj", tex_mesh, 5);
 
 
