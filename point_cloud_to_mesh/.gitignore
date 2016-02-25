@@ -1,0 +1,5 @@
+*.ply
+*.obj
+*.vtk
+*_downsample.pcd
+*_downsample_normal.pcd
