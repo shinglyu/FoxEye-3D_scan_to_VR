@@ -2,8 +2,8 @@
 pcl_pcd2png "$1" "$1.png" 
 
 #===Downsampling===
-#pcl_voxel_grid learn1.pcd learn1_downsample.pcd -leaf 0.005
-pcl_voxel_grid "$1" learn1_downsample.pcd -leaf 0.001
+pcl_voxel_grid learn1.pcd learn1_downsample.pcd -leaf 0.005
+#pcl_voxel_grid "$1" learn1_downsample.pcd -leaf 0.001
 #cp "$1" learn1_downsample.pcd
 #----------------------
 #pcl_viewer learn1.pcd
@@ -46,3 +46,6 @@ meshlab learn1_downsample_normal_poisson_color.ply
 
 #===Export to obj===
 pcl_vtk2obj learn1_downsample_normal_poisson.vtk learn1_downsample_normal_poisson.obj
+
+#===Create textured obj + texture png
+#TODO

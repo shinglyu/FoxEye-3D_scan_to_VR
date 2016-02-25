@@ -10,3 +10,8 @@ echo "Building transfer_vertex_color"
 cd ./transfer_vertex_color
 cmake .
 make 
+
+echo "Building texture_mapping"
+cd ./texture_mapping
+cmake .
+make 
